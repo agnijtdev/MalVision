@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MalVision | Static Malware Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: #ffffff; }
+        .card { background-color: #1e1e1e; border: 1px solid #333; }
+        .hidden { display: none; }
+        .binary-preview { width: 224px; height: 224px; border: 2px solid #0d6efd; border-radius: 8px; }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center vh-100">
+
+    <div class="container" style="max-width: 600px;">
+        <div class="text-center mb-4">
+            <h1 class="fw-bold text-primary">MalVision Engine</h1>
+            <p class="text-secondary">Structural Pattern Analysis via Binary Visualization</p>
+        </div>
+
+        <div class="card p-4 shadow-lg">
+            <div id="uploadSection">
+                <div class="mb-3">
+                    <input class="form-control bg-dark text-light border-secondary" type="file" id="fileInput">
+                </div>
+                <button onclick="handleConvert()" class="btn btn-primary w-100 fw-bold">1. Convert to Binary Image</button>
+            </div>
+
+            <div id="visualizeSection" class="hidden text-center mt-4 pt-4 border-top border-secondary">
+                <h5 class="text-info mb-3">Binary Texture Generation</h5>
+                <img id="binaryDisplay" class="binary-preview mx-auto mb-3 shadow">
+                <button onclick="handleAnalyze()" class="btn btn-success w-100 fw-bold">2. Run AI Pattern Analysis</button>
+            </div>
+
+            <div id="loading" class="text-center mt-4 hidden">
+                <div class="spinner-border text-primary"></div>
+                <p class="mt-2 text-secondary">Neural Network Scanning...</p>
+            </div>
+
+            <div id="resultBox" class="mt-4 hidden p-3 rounded bg-dark border border-success text-center">
+                <h4 class="text-secondary mb-1">Detection Result</h4>
+                <h2 id="malwareFamily" class="text-danger fw-bold mb-0"></h2>
+                <p class="mt-2 mb-0">Confidence: <span id="confidenceScore" class="text-warning fw-bold"></span>%</p>
+                <button onclick="location.reload()" class="btn btn-sm btn-outline-secondary mt-3">Scan New File</button>
+            </div>
+            
+            <div id="errorBox" class="mt-4 hidden alert alert-danger"></div>
+        </div>
+    </div>
+
+    <script>
+        async function handleConvert() {
+            const file = document.getElementById('fileInput').files[0];
+            if(!file) return alert("Please select a file.");
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/convert', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if(data.image) {
+                document.getElementById('binaryDisplay').src = "data:image/png;base64," + data.image;
+                document.getElementById('visualizeSection').classList.remove('hidden');
+                document.getElementById('uploadSection').classList.add('opacity-50');
+            } else {
+                alert(data.error);
+            }
+        }
+
+        async function handleAnalyze() {
+            const file = document.getElementById('fileInput').files[0];
+            const loading = document.getElementById('loading');
+            const resultBox = document.getElementById('resultBox');
+            
+            loading.classList.remove('hidden');
+            document.getElementById('visualizeSection').classList.add('opacity-50');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/analyze', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            loading.classList.add('hidden');
+            if(data.family) {
+                document.getElementById('malwareFamily').innerText = data.family;
+                document.getElementById('confidenceScore').innerText = data.confidence;
+                resultBox.classList.remove('hidden');
+            } else {
+                alert(data.error);
+            }
+        }
+    </script>
+</body>
+</html>
